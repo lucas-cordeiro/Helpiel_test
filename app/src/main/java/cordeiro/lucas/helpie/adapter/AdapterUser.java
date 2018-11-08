@@ -33,9 +33,9 @@ public class AdapterUser extends RecyclerView.Adapter<AdapterUser.MyViewHolder>{
         User user = users.get(i);
         myViewHolder.txtId.setText(String.valueOf(user.getId()));
         myViewHolder.txtName.setText(user.getName());
-        myViewHolder.txtEmail.setText(user.getEmail());
-        myViewHolder.txtCompanyName.setText(user.getCompanyName());
-        myViewHolder.txtCity.setText(user.getCity());
+        myViewHolder.txtEmail.setText(String.valueOf("Email: "+user.getEmail()));
+        myViewHolder.txtCompanyName.setText(String.valueOf("Company Name: "+user.getCompanyName()));
+        myViewHolder.txtCity.setText(String.valueOf("City: "+user.getCity()));
     }
 
     @Override

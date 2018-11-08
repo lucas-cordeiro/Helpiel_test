@@ -1,20 +1,20 @@
 package cordeiro.lucas.helpie.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class User {
     private int id;
     private String name;
     private String email;
     private Company company;
-    private String city;
+    private Address address;
 
     public User() {
         this.id = 0;
         this.name = "Null";
         this.email = "Null";
-        this.city = "Null";
+        this.company = new Company();
+        setCompanyName("Null");
+        this.address = new Address();
+        setCity("Null");
     }
 
     public int getId() {
@@ -50,10 +50,26 @@ public class User {
     }
 
     public String getCity() {
-        return city;
+        return address.getCity();
     }
 
     public void setCity(String city) {
-        this.city = city;
+        address.setCity(city);
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
     }
 }
