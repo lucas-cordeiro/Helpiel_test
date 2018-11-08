@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/ic_users"
+        android:icon="@drawable/ic_group_preto_24dp"
+        android:title="Users"/>
+    <item android:id="@+id/ic_photos"
+        android:icon="@drawable/ic_photo_library_preto_24dp"
+        android:title="Photos"/>
+</menu>
