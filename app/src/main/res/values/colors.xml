@@ -6,4 +6,6 @@
     
     <color name="colorIconTintBottomNav">#FFFFFF</color>
     <color name="coloritemTextColorBottomNav">#ffffff</color>
+
+    <color name="colorFundoCard">#e8e8e8</color>
 </resources>
