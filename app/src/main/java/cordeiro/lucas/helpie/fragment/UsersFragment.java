@@ -105,8 +105,6 @@ public class UsersFragment extends Fragment {
                        })
         );
 
-        configurarRetrofit();
-
 
         return view;
     }
@@ -146,6 +144,7 @@ public class UsersFragment extends Fragment {
 
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
+                if (!t.getMessage().equals("Canceled"))
                 Toast.makeText(getContext(), "Falha: "+t.getMessage(),Toast.LENGTH_LONG).show();
                 Log.d(TAG,"Falha: "+t.getMessage());
                 progressBar.setVisibility(View.GONE);
@@ -179,7 +178,9 @@ public class UsersFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        if(!call.isExecuted()) {
+        if(call == null)
+            configurarRetrofit();
+        else if(!call.isExecuted()) {
             try {
                 call.execute();
             } catch (IOException e) {

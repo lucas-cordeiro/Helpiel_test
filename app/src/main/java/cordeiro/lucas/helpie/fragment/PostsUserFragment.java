@@ -70,8 +70,6 @@ public class PostsUserFragment extends Fragment {
         recyclerView.setHasFixedSize(true);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        configurarRetrofit();
-
         return view;
     }
 
@@ -108,8 +106,9 @@ public class PostsUserFragment extends Fragment {
 
             @Override
             public void onFailure(Call<List<Post>> call, Throwable t) {
-                Toast.makeText(getContext(), "Falha: "+t.getMessage(),Toast.LENGTH_LONG).show();
-                Log.d(TAG,"Falha: "+t.getMessage());
+                if (!t.getMessage().equals("Canceled"))
+                    Toast.makeText(getContext(), "Falha: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                Log.d(TAG, "Falha: " + t.getMessage());
                 progressBar.setVisibility(View.GONE);
             }
         });
@@ -120,7 +119,9 @@ public class PostsUserFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        if(!call.isExecuted()) {
+        if(call == null)
+            configurarRetrofit();
+        else if(!call.isExecuted()) {
             try {
                 call.execute();
             } catch (IOException e) {
