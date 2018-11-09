@@ -7,6 +7,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.MenuItem;
 
 import com.ittianyu.bottomnavigationviewex.BottomNavigationViewEx;
@@ -38,6 +39,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //Carregar Fragment Padrão
+        carregarFragmentPadrao();
+
+        //Configura item selecionado
+        BottomNavigationViewEx bottomNavigationViewEx = findViewById(R.id.bottom_navigation);
+        Menu menu = bottomNavigationViewEx.getMenu();
+        MenuItem menuItem = menu.getItem(0);
+        menuItem.setChecked(true);
+    }
+
     private void configurarBottomNavigationView() {
 
         BottomNavigationViewEx bottomNavigationViewEx = findViewById(R.id.bottom_navigation);
@@ -50,8 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Habilitar navegação
         habilitarNavagacao(bottomNavigationViewEx);
-        //Carregar Fragment Padrão
-        carregarFragmentPadrao();
+
     }
 
     private void habilitarNavagacao(BottomNavigationViewEx viewEx){
