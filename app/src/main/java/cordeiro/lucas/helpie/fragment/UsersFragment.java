@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import cordeiro.lucas.helpie.R;
@@ -27,6 +28,7 @@ import cordeiro.lucas.helpie.activity.MainActivity;
 import cordeiro.lucas.helpie.adapter.AdapterUser;
 import cordeiro.lucas.helpie.api.DataService;
 import cordeiro.lucas.helpie.clickListener.RecyclerItemClickListener;
+import cordeiro.lucas.helpie.model.Post;
 import cordeiro.lucas.helpie.model.User;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -128,10 +130,12 @@ public class UsersFragment extends Fragment {
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                 if(response.isSuccessful()){
                     users = response.body();
-                    Log.d(TAG,"Size: "+users.size()+" Name: "+users.get(0).getCompanyName());
+
+                    List<User> usersOrder = orderUsersByName(users);
+                    Log.d(TAG,"Size: "+usersOrder.size()+" Name: "+usersOrder.get(0).getCompanyName());
 
                     //Adapter RecyclerView
-                    adapter = new AdapterUser(users);
+                    adapter = new AdapterUser(usersOrder);
                     recyclerView.setAdapter(adapter);
 
                 }else{
@@ -148,6 +152,28 @@ public class UsersFragment extends Fragment {
             }
         });
 
+    }
+
+    private List<User> orderUsersByName(List<User> users){
+        List<String> names = new ArrayList<>();
+
+        for(User user : users){
+            names.add(user.getName());
+        }
+        Collections.sort(names);
+
+        List<User> usersOrder = new ArrayList<>();
+
+        for(String name : names){
+            for(User user : users){
+                if(name.equals(user.getName())){
+                    usersOrder.add(user);
+                    break;
+                }
+            }
+        }
+
+        return usersOrder;
     }
 
     @Override
