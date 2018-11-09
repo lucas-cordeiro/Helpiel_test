@@ -15,6 +15,8 @@ import cordeiro.lucas.helpie.R;
 public class PhotosFragment extends Fragment {
 
 
+    public static final String TAG = "PHOTOS_FRAGMENT";
+
     public PhotosFragment() {
         // Required empty public constructor
     }

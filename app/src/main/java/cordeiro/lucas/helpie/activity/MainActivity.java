@@ -17,6 +17,8 @@ import cordeiro.lucas.helpie.fragment.UsersFragment;
 
 public class MainActivity extends AppCompatActivity {
 
+    private boolean posts;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,6 +26,16 @@ public class MainActivity extends AppCompatActivity {
 
         //Configurar BottomNavigationView
         configurarBottomNavigationView();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if(posts){
+            posts = false;
+            carregarFragmentPadrao();
+        }else{
+            super.onBackPressed();
+        }
     }
 
     private void configurarBottomNavigationView() {
@@ -49,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
                 FragmentManager fragmentManager = getSupportFragmentManager();
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                posts = false;
 
                 switch (menuItem.getItemId()){
                     case R.id.ic_users:
@@ -73,5 +86,9 @@ public class MainActivity extends AppCompatActivity {
         fragmentTransaction.setCustomAnimations(R.anim.enter_from_left, R.anim.exit_to_right);
         fragmentTransaction.replace(R.id.viewPager, new UsersFragment());
         fragmentTransaction.commit();
+    }
+
+    public void setPosts(boolean posts) {
+        this.posts = posts;
     }
 }

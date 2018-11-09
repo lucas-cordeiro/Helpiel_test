@@ -2,14 +2,19 @@ package cordeiro.lucas.helpie.fragment;
 
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -18,8 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cordeiro.lucas.helpie.R;
+import cordeiro.lucas.helpie.activity.MainActivity;
 import cordeiro.lucas.helpie.adapter.AdapterUser;
 import cordeiro.lucas.helpie.api.DataService;
+import cordeiro.lucas.helpie.clickListener.RecyclerItemClickListener;
 import cordeiro.lucas.helpie.model.User;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -40,7 +47,7 @@ public class UsersFragment extends Fragment {
     private Retrofit retrofit;
     private Call<List<User>> call;
 
-    private static final String TAG = "USERS_FRAGMENT";
+    public static final String TAG = "USERS_FRAGMENT";
 
     public UsersFragment() {
         // Required empty public constructor
@@ -60,6 +67,42 @@ public class UsersFragment extends Fragment {
         recyclerView.setHasFixedSize(true);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
+        //Recycler View Click
+        recyclerView.addOnItemTouchListener(
+               new RecyclerItemClickListener(
+                       getContext(),
+                       recyclerView,
+                       new RecyclerItemClickListener.OnItemClickListener() {
+                           @Override
+                           public void onItemClick(View view, int position) {
+                               User user = users.get(position);
+
+                               PostsUserFragment fragment = new PostsUserFragment();
+                               Bundle bundle = new Bundle();
+                               bundle.putSerializable("user", user);
+                               fragment.setArguments(bundle);
+
+                               FragmentManager fragmentManager = getFragmentManager();
+                               FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                               fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_left);
+                               fragmentTransaction.replace(R.id.viewPager, fragment);
+                               fragmentTransaction.commit();
+
+                               ((MainActivity)getActivity()).setPosts(true);
+                           }
+
+                           @Override
+                           public void onLongItemClick(View view, int position) {
+
+                           }
+
+                           @Override
+                           public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                           }
+                       })
+        );
+
         configurarRetrofit();
 
 
@@ -77,7 +120,7 @@ public class UsersFragment extends Fragment {
     private void carregarUsers() {
         progressBar.setVisibility(View.VISIBLE);
 
-        final DataService userService = retrofit.create(DataService.class);
+        DataService userService = retrofit.create(DataService.class);
         call = userService.recuperarUsers();
 
         call.enqueue(new Callback<List<User>>() {
@@ -90,7 +133,7 @@ public class UsersFragment extends Fragment {
                     //Adapter RecyclerView
                     adapter = new AdapterUser(users);
                     recyclerView.setAdapter(adapter);
-                    //adapter.notifyDataSetChanged();
+
                 }else{
                     Toast.makeText(getContext(), "Falha ao recuperar",Toast.LENGTH_LONG).show();
                 }
