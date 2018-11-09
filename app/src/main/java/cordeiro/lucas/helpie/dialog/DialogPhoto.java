@@ -45,13 +45,11 @@ public class DialogPhoto extends Dialog {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.dialog_photo);
 
+        progressBar = findViewById(R.id.progressBarDialogPhoto);
         ImageView imageView = findViewById(R.id.imgPhotoDialog);
         ImageButton imageButtonClose = findViewById(R.id.imageButtonClose);
         TextView txtTilte = findViewById(R.id.txtTitleDialogPhoto);
         txtTilte.setText(photo.getTitle());
-        //progressBar = findViewById(R.id.progressBarDialogPhoto);
-
-        //progressBar.setVisibility(View.VISIBLE);
 
         Log.d(TAG, "Url: "+photo.getUrl());
         Glide.with(activity).load(photo.getUrl()).addListener(new RequestListener<Drawable>() {
@@ -59,16 +57,17 @@ public class DialogPhoto extends Dialog {
             public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                 Toast.makeText(getContext(), "Falha: "+e.getMessage(), Toast.LENGTH_LONG).show();
                 Log.d(TAG, "Falha: "+e.getMessage());
-                //progressBar.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
                 return false;
             }
 
             @Override
             public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
                 Log.d(TAG, "onResourceReady");
-                //progressBar.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
                 return false;
             }
+
         }).into(imageView);
 
         imageButtonClose.setOnClickListener(new View.OnClickListener() {

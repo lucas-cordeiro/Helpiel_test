@@ -135,6 +135,7 @@ public class UsersFragment extends Fragment {
                     //Adapter RecyclerView
                     adapter = new AdapterUser(usersOrder);
                     recyclerView.setAdapter(adapter);
+                    adapter.notifyDataSetChanged();
 
                 }else{
                     Toast.makeText(getContext(), "Falha ao recuperar",Toast.LENGTH_LONG).show();

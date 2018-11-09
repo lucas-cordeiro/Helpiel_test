@@ -10,6 +10,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,16 +18,25 @@ import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.Gallery;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import cordeiro.lucas.helpie.R;
 import cordeiro.lucas.helpie.adapter.AdapterPhoto;
 import cordeiro.lucas.helpie.adapter.AdapterUser;
+import cordeiro.lucas.helpie.api.DataService;
 import cordeiro.lucas.helpie.clickListener.RecyclerItemClickListener;
 import cordeiro.lucas.helpie.dialog.DialogPhoto;
 import cordeiro.lucas.helpie.model.Photo;
+import cordeiro.lucas.helpie.model.User;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -36,6 +46,11 @@ public class PhotosFragment extends Fragment {
     private RecyclerView recyclerView;
     private List<Photo> photos;
     private AdapterPhoto adapter;
+    private ProgressBar progressBar;
+
+
+    private Retrofit retrofit;
+    private Call<List<Photo>> call;
 
     public static final String TAG = "PHOTOS_FRAGMENT";
 
@@ -45,12 +60,12 @@ public class PhotosFragment extends Fragment {
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_photos, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerViewPhotos);
+        progressBar = view.findViewById(R.id.progressBarPhotos);
 
         //Recycler View
         RecyclerView.LayoutManager layoutManager = new GridLayoutManager(getContext(), 2);
@@ -90,32 +105,71 @@ public class PhotosFragment extends Fragment {
         return view;
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
+    private void configurarRetrofit() {
+
+        retrofit = new Retrofit.Builder()
+                .baseUrl("https://jsonplaceholder.typicode.com")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
         carregarPhotos();
     }
 
     private void carregarPhotos() {
-        photos = new ArrayList<>();
-        adapter = new AdapterPhoto(photos, this);
-        recyclerView.setAdapter(adapter);
+        progressBar.setVisibility(View.VISIBLE);
+        DataService recuperarPhotos = retrofit.create(DataService.class);
+        call = recuperarPhotos.recuperarPhotos();
 
-        for(int i=0;i<10;i++){
-            Photo photo = new Photo();
-            photo.setId(i);
-            photos.add(photo);
-        }
-        Photo photo = new Photo();
-        photo.setId(11);
-        photo.setUrl("https://via.placeholder.com/150/24f355");
-        photos.add(photo);
+        call.enqueue(new Callback<List<Photo>>() {
+            @Override
+            public void onResponse(Call<List<Photo>> call, Response<List<Photo>> response) {
+                if (response.isSuccessful()) {
+                    photos = response.body();
 
-        Photo photo2 = new Photo();
-        photo2.setId(12);
-        photo2.setUrl("http://static1.conquistesuavida.com.br/ingredients/5/54/52/05/@/24682--ingredient_detail_ingredient-2.png");
-        photos.add(photo2);
-        adapter.notifyDataSetChanged();
+                    Log.d(TAG, "Size: " + photos.size() + " Title: " + photos.get(0).getTitle());
+
+                    //Adapter RecyclerView
+                    adapter = new AdapterPhoto(photos, PhotosFragment.this);
+                    recyclerView.setAdapter(adapter);
+                    adapter.notifyDataSetChanged();
+
+                } else
+                    Toast.makeText(getContext(), "Falha ao recuperar", Toast.LENGTH_LONG).show();
+
+                progressBar.setVisibility(View.GONE);
+            }
+            @Override
+            public void onFailure(Call<List<Photo>> call, Throwable t) {
+                if (!t.getMessage().equals("Canceled"))
+                    Toast.makeText(getContext(), "Falha: "+t.getMessage(),Toast.LENGTH_LONG).show();
+                Log.d(TAG,"Falha: "+t.getMessage());
+                progressBar.setVisibility(View.GONE);
+            }
+        });
+
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if(call == null)
+            configurarRetrofit();
+        else if(!call.isExecuted()) {
+            try {
+                call.execute();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if(call.isExecuted())
+            call.cancel();
+    }
+
 
 }

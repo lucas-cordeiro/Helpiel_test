@@ -2,6 +2,7 @@ package cordeiro.lucas.helpie.api;
 
 import java.util.List;
 
+import cordeiro.lucas.helpie.model.Photo;
 import cordeiro.lucas.helpie.model.Post;
 import cordeiro.lucas.helpie.model.User;
 import retrofit2.Call;
@@ -15,4 +16,8 @@ public interface DataService {
 
     @GET("posts")
     Call<List<Post>> recuperarPosts(@Query("userId") String userId);
+
+    @GET("photos/")
+    Call<List<Photo>> recuperarPhotos( );
+
 }
