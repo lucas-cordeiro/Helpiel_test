@@ -2,7 +2,7 @@ package cordeiro.lucas.helpie.fragment;
 
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -11,14 +11,12 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,12 +26,15 @@ import cordeiro.lucas.helpie.activity.MainActivity;
 import cordeiro.lucas.helpie.adapter.AdapterUser;
 import cordeiro.lucas.helpie.api.DataService;
 import cordeiro.lucas.helpie.clickListener.RecyclerItemClickListener;
-import cordeiro.lucas.helpie.model.Post;
 import cordeiro.lucas.helpie.model.User;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
@@ -41,13 +42,16 @@ import retrofit2.converter.gson.GsonConverterFactory;
  */
 public class UsersFragment extends Fragment {
 
+    private final CompositeDisposable disposables = new CompositeDisposable();
+
     private RecyclerView recyclerView;
     private List<User> users;
     private AdapterUser adapter;
     private ProgressBar progressBar;
 
     private Retrofit retrofit;
-    private Call<List<User>> call;
+    private Observable<List<User>> observable;
+    private Observer<List<User>> observer;
 
     public static final String TAG = "USERS_FRAGMENT";
 
@@ -113,46 +117,59 @@ public class UsersFragment extends Fragment {
         retrofit = new Retrofit.Builder()
                 .baseUrl("https://jsonplaceholder.typicode.com")
                 .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build();
-        carregarUsers();
+        definirObservable();
     }
 
-    private void carregarUsers() {
+    private void definirObservable() {
         progressBar.setVisibility(View.VISIBLE);
 
         DataService userService = retrofit.create(DataService.class);
-        call = userService.recuperarUsers();
-
-        call.enqueue(new Callback<List<User>>() {
+        observable = userService.recuperarUsersObservable();
+        observer = new Observer<List<User>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                if(response.isSuccessful()){
-                    users = response.body();
+            public void onSubscribe(Disposable d) {
+                disposables.add(d);
+            }
 
-                    List<User> usersOrder = orderUsersByName(users);
-                    Log.d(TAG,"Size: "+usersOrder.size()+" Name: "+usersOrder.get(0).getCompanyName());
+            @Override
+            public void onNext(List<User> usersList) {
+                users = usersList;
 
-                    //Adapter RecyclerView
-                    adapter = new AdapterUser(usersOrder);
-                    recyclerView.setAdapter(adapter);
-                    adapter.notifyDataSetChanged();
+                List<User> usersOrder = orderUsersByName(users);
+                Log.d(TAG,"Size: "+usersOrder.size()+" Name: "+usersOrder.get(0).getCompanyName());
 
-                }else{
-                    Toast.makeText(getContext(), "Falha ao recuperar",Toast.LENGTH_LONG).show();
-                }
+                //Adapter RecyclerView
+                adapter = new AdapterUser(usersOrder);
+                recyclerView.setAdapter(adapter);
+                adapter.notifyDataSetChanged();
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Toast.makeText(getContext(), "Falha: "+e.getMessage(),Toast.LENGTH_LONG).show();
+                Log.d(TAG,"Falha: "+e.getMessage());
                 progressBar.setVisibility(View.GONE);
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
-                if (!t.getMessage().equals("Canceled"))
-                Toast.makeText(getContext(), "Falha: "+t.getMessage(),Toast.LENGTH_LONG).show();
-                Log.d(TAG,"Falha: "+t.getMessage());
+            public void onComplete() {
                 progressBar.setVisibility(View.GONE);
             }
-        });
+        };
 
+        carregarUsers();
     }
+
+    private void carregarUsers(){
+       observable
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(observer);
+    }
+
 
     private List<User> orderUsersByName(List<User> users){
         List<String> names = new ArrayList<>();
@@ -179,22 +196,15 @@ public class UsersFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        if(call == null)
+        if (observable == null)
             configurarRetrofit();
-        else if(!call.isExecuted()) {
-            try {
-                call.execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
+        else
+            carregarUsers();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if(call.isExecuted())
-            call.cancel();
+        disposables.clear();
     }
 }

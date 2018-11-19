@@ -68,28 +68,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void habilitarNavagacao(BottomNavigationViewEx viewEx){
-        viewEx.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+        viewEx.setOnNavigationItemSelectedListener(m ->{
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            posts = false;
 
-                FragmentManager fragmentManager = getSupportFragmentManager();
-                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                posts = false;
-
-                switch (menuItem.getItemId()){
-                    case R.id.ic_users:
-                        fragmentTransaction.setCustomAnimations(R.anim.enter_from_left, R.anim.exit_to_right);
-                        fragmentTransaction.replace(R.id.viewPager, new UsersFragment());
-                        fragmentTransaction.commit();
-                        return true;
-                    case R.id.ic_photos:
-                        fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_left);
-                        fragmentTransaction.replace(R.id.viewPager, new PhotosFragment());
-                        fragmentTransaction.commit();
-                        return true;
-                }
-                return false;
+            switch (m.getItemId()){
+                case R.id.ic_users:
+                    fragmentTransaction.setCustomAnimations(R.anim.enter_from_left, R.anim.exit_to_right);
+                    fragmentTransaction.replace(R.id.viewPager, new UsersFragment());
+                    fragmentTransaction.commit();
+                    return true;
+                case R.id.ic_photos:
+                    fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_left);
+                    fragmentTransaction.replace(R.id.viewPager, new PhotosFragment());
+                    fragmentTransaction.commit();
+                    return true;
             }
+            return false;
         });
     }
 
