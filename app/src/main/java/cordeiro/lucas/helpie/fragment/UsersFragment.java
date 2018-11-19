@@ -42,13 +42,13 @@ import retrofit2.converter.gson.GsonConverterFactory;
  */
 public class UsersFragment extends Fragment {
 
-    private final CompositeDisposable disposables = new CompositeDisposable();
-
     private RecyclerView recyclerView;
     private List<User> users;
     private AdapterUser adapter;
     private ProgressBar progressBar;
 
+
+    private final CompositeDisposable disposables = new CompositeDisposable();
     private Retrofit retrofit;
     private Observable<List<User>> observable;
     private Observer<List<User>> observer;
@@ -126,7 +126,7 @@ public class UsersFragment extends Fragment {
         progressBar.setVisibility(View.VISIBLE);
 
         DataService userService = retrofit.create(DataService.class);
-        observable = userService.recuperarUsersObservable();
+        observable = userService.recuperarPostsObservable();
         observer = new Observer<List<User>>() {
             @Override
             public void onSubscribe(Disposable d) {

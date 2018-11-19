@@ -13,10 +13,10 @@ import retrofit2.http.Query;
 
 public interface DataService {
     @GET("users/")
-    Observable<List<User>> recuperarUsersObservable();
+    Observable<List<User>> recuperarPostsObservable();
 
     @GET("posts")
-    Call<List<Post>> recuperarPosts(@Query("userId") String userId);
+    Observable<List<Post>> recuperarPostsObservable(@Query("userId") String userId);
 
     @GET("photos/")
     Call<List<Photo>> recuperarPhotos( );

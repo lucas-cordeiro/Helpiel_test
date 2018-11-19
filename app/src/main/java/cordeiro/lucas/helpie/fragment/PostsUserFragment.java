@@ -13,8 +13,6 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import cordeiro.lucas.helpie.R;
@@ -22,10 +20,14 @@ import cordeiro.lucas.helpie.adapter.AdapterPost;
 import cordeiro.lucas.helpie.api.DataService;
 import cordeiro.lucas.helpie.model.Post;
 import cordeiro.lucas.helpie.model.User;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
@@ -39,8 +41,11 @@ public class PostsUserFragment extends Fragment {
     private ProgressBar progressBar;
     private User user;
 
+
+    private final CompositeDisposable disposables = new CompositeDisposable();
     private Retrofit retrofit;
-    private Call<List<Post>> call;
+    private Observable<List<Post>> observable;
+    private Observer<List<Post>> observer;
 
     public static final String TAG = "POST_FRAGMENT";
 
@@ -77,65 +82,70 @@ public class PostsUserFragment extends Fragment {
         retrofit = new Retrofit.Builder()
                 .baseUrl("https://jsonplaceholder.typicode.com")
                 .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build();
+        definirObservable();
+    }
+
+    private void definirObservable(){
+        progressBar.setVisibility(View.VISIBLE);
+        DataService postService = retrofit.create(DataService.class);
+        observable = postService.recuperarPostsObservable(String.valueOf(user.getId()));
+        observer = new Observer<List<Post>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                disposables.add(d);
+            }
+
+            @Override
+            public void onNext(List<Post> postsList) {
+                posts = postsList;
+
+                Log.d(TAG,"Size: "+posts.size()+" Title: "+posts.get(0).getTitle());
+
+                //Adapter RecyclerView
+                adapter = new AdapterPost(posts);
+                recyclerView.setAdapter(adapter);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Toast.makeText(getContext(), "Falha: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Log.d(TAG, "Falha: " + e.getMessage());
+                progressBar.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onComplete() {
+                progressBar.setVisibility(View.GONE);
+            }
+        };
+
         carregarPosts();
     }
 
+
     private void carregarPosts() {
-        progressBar.setVisibility(View.VISIBLE);
 
-        DataService postService = retrofit.create(DataService.class);
-        call = postService.recuperarPosts(String.valueOf(user.getId()));
-
-        call.enqueue(new Callback<List<Post>>() {
-            @Override
-            public void onResponse(Call<List<Post>> call, Response<List<Post>> response) {
-                if(response.isSuccessful()){
-                    posts = response.body();
-                    Log.d(TAG,"Size: "+posts.size()+" Title: "+posts.get(0).getTitle());
-
-                    //Adapter RecyclerView
-                    adapter = new AdapterPost(posts);
-                    recyclerView.setAdapter(adapter);
-
-                }else{
-                    Toast.makeText(getContext(), "Falha ao recuperar",Toast.LENGTH_LONG).show();
-                }
-                progressBar.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onFailure(Call<List<Post>> call, Throwable t) {
-                if (!t.getMessage().equals("Canceled"))
-                    Toast.makeText(getContext(), "Falha: " + t.getMessage(), Toast.LENGTH_LONG).show();
-                Log.d(TAG, "Falha: " + t.getMessage());
-                progressBar.setVisibility(View.GONE);
-            }
-        });
-
-
+        observable
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(observer);
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        if(call == null)
+        if (observable == null)
             configurarRetrofit();
-        else if(!call.isExecuted()) {
-            try {
-                call.execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
+        else
+            carregarPosts();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if(call.isExecuted())
-            call.cancel();
+        disposables.clear();
     }
 
 }
