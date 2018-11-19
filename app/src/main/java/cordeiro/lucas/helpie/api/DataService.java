@@ -6,9 +6,7 @@ import cordeiro.lucas.helpie.model.Photo;
 import cordeiro.lucas.helpie.model.Post;
 import cordeiro.lucas.helpie.model.User;
 import io.reactivex.Observable;
-import retrofit2.Call;
 import retrofit2.http.GET;
-import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface DataService {
@@ -19,6 +17,6 @@ public interface DataService {
     Observable<List<Post>> recuperarPostsObservable(@Query("userId") String userId);
 
     @GET("photos/")
-    Call<List<Photo>> recuperarPhotos( );
+    Observable<List<Photo>> recuperarPhotos( );
 
 }

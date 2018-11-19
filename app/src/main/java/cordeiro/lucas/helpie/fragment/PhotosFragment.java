@@ -32,10 +32,17 @@ import cordeiro.lucas.helpie.clickListener.RecyclerItemClickListener;
 import cordeiro.lucas.helpie.dialog.DialogPhoto;
 import cordeiro.lucas.helpie.model.Photo;
 import cordeiro.lucas.helpie.model.User;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
@@ -49,8 +56,10 @@ public class PhotosFragment extends Fragment {
     private ProgressBar progressBar;
 
 
+    private CompositeDisposable disposables = new CompositeDisposable();
     private Retrofit retrofit;
-    private Call<List<Photo>> call;
+    private Observable<List<Photo>> observable;
+    private Observer<List<Photo>> observer;
 
     public static final String TAG = "PHOTOS_FRAGMENT";
 
@@ -106,69 +115,72 @@ public class PhotosFragment extends Fragment {
     }
 
     private void configurarRetrofit() {
-
         retrofit = new Retrofit.Builder()
                 .baseUrl("https://jsonplaceholder.typicode.com")
                 .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build();
+        definirObservable();
+    }
+
+    private void definirObservable(){
+        progressBar.setVisibility(View.VISIBLE);
+        DataService recuperarPhotos = retrofit.create(DataService.class);
+        observable = recuperarPhotos.recuperarPhotos();
+        observer = new Observer<List<Photo>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                disposables.add(d);
+            }
+
+            @Override
+            public void onNext(List<Photo> photosList) {
+                photos = photosList;
+
+                Log.d(TAG, "Size: " + photos.size() + " Title: " + photos.get(0).getTitle());
+
+                //Adapter RecyclerView
+                adapter = new AdapterPhoto(photos, PhotosFragment.this);
+                recyclerView.setAdapter(adapter);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Toast.makeText(getContext(), "Falha: "+e.getMessage(),Toast.LENGTH_LONG).show();
+                Log.d(TAG,"Falha: "+e.getMessage());
+                progressBar.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onComplete() {
+                progressBar.setVisibility(View.GONE);
+            }
+        };
 
         carregarPhotos();
     }
 
     private void carregarPhotos() {
-        progressBar.setVisibility(View.VISIBLE);
-        DataService recuperarPhotos = retrofit.create(DataService.class);
-        call = recuperarPhotos.recuperarPhotos();
-
-        call.enqueue(new Callback<List<Photo>>() {
-            @Override
-            public void onResponse(Call<List<Photo>> call, Response<List<Photo>> response) {
-                if (response.isSuccessful()) {
-                    photos = response.body();
-
-                    Log.d(TAG, "Size: " + photos.size() + " Title: " + photos.get(0).getTitle());
-
-                    //Adapter RecyclerView
-                    adapter = new AdapterPhoto(photos, PhotosFragment.this);
-                    recyclerView.setAdapter(adapter);
-                    adapter.notifyDataSetChanged();
-
-                } else
-                    Toast.makeText(getContext(), "Falha ao recuperar", Toast.LENGTH_LONG).show();
-
-                progressBar.setVisibility(View.GONE);
-            }
-            @Override
-            public void onFailure(Call<List<Photo>> call, Throwable t) {
-                if (!t.getMessage().equals("Canceled"))
-                    Toast.makeText(getContext(), "Falha: "+t.getMessage(),Toast.LENGTH_LONG).show();
-                Log.d(TAG,"Falha: "+t.getMessage());
-                progressBar.setVisibility(View.GONE);
-            }
-        });
-
+        observable
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(observer);
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        if(call == null)
+        if (observable == null)
             configurarRetrofit();
-        else if(!call.isExecuted()) {
-            try {
-                call.execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
+        else
+            carregarPhotos();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if(call.isExecuted())
-            call.cancel();
+        disposables.clear();
     }
 
 
